@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MediReach MVP - AI-Powered Home Healthcare</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-50 font-sans text-slate-800 antialiased">
+
+    <header class="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="bg-emerald-600 text-white p-2 rounded-xl">
+                    <i data-lucide="activity" class="w-6 h-6"></i>
+                </div>
+                <span class="text-xl font-bold text-slate-900 tracking-tight">MediReach<span class="text-emerald-600">.</span></span>
+                <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold px-2.5 py-0.5 rounded-full ml-2">MVP Demo</span>
+            </div>
+            
+            <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+                <button id="btn-patient" onclick="switchRole('patient')" class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all bg-white text-emerald-700 shadow-xs">
+                    <i data-lucide="user" class="w-4 h-4"></i> Patient View
+                </button>
+                <button id="btn-nurse" onclick="switchRole('nurse')" class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all text-slate-600 hover:text-slate-900">
+                    <i data-lucide="heart-pulse" class="w-4 h-4"></i> Nurse Dashboard
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <div id="patient-view" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="map-pin" class="text-emerald-600 w-5 h-5 animate-pulse"></i>
+                            <h2 class="font-semibold text-slate-900">Nearby Available Healthcare Providers</h2>
+                        </div>
+                        <span class="text-xs bg-blue-100 text-blue-800 px-2.5 py-1 rounded-full font-medium">Live in Nairobi</span>
+                    </div>
+                    <div id="map" class="h-96 w-100 bg-slate-100"></div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                    <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <i data-lucide="calendar-plus" class="text-emerald-600"></i> Request Quick Service
+                    </h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <button onclick="selectService('Home Visit')" class="service-card p-4 border border-slate-200 rounded-xl hover:border-emerald-500 hover:bg-emerald-50/50 transition flex flex-col items-center text-center gap-2">
+                            <i data-lucide="home" class="w-6 h-6 text-emerald-600"></i>
+                            <span class="text-xs font-semibold">Home Nurse Visit</span>
+                        </button>
+                        <button onclick="selectService('Doctor Appointment')" class="service-card p-4 border border-slate-200 rounded-xl hover:border-emerald-500 hover:bg-emerald-50/50 transition flex flex-col items-center text-center gap-2">
+                            <i data-lucide="stethoscopes" class="w-6 h-6 text-emerald-600"></i>
+                            <span class="text-xs font-semibold">Doctor Visit</span>
+                        </button>
+                        <button onclick="selectService('Teleconsultation')" class="service-card p-4 border border-slate-200 rounded-xl hover:border-emerald-500 hover:bg-emerald-50/50 transition flex flex-col items-center text-center gap-2">
+                            <i data-lucide="video" class="w-6 h-6 text-emerald-600"></i>
+                            <span class="text-xs font-semibold">Teleconsultation</span>
+                        </button>
+                        <button onclick="selectService('Medication Delivery')" class="service-card p-4 border border-slate-200 rounded-xl hover:border-emerald-500 hover:bg-emerald-50/50 transition flex flex-col items-center text-center gap-2">
+                            <i data-lucide="pill" class="w-6 h-6 text-emerald-600"></i>
+                            <span class="text-xs font-semibold">Meds Delivery</span>
+                        </button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Selected Care Type</label>
+                            <input type="text" id="selected-service-input" readonly value="Home Nurse Visit" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-medium text-slate-700 focus:outline-hidden">
+                        </div>
+                        <button onclick="triggerBookingAlert()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl transition shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2">
+                            Confirm and Search Nearest Provider <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col h-[580px] overflow-hidden">
+                <div class="p-4 border-b border-slate-100 bg-linear-to-r from-emerald-600 to-teal-600 text-white flex items-center gap-3">
+                    <div class="bg-white/20 p-2 rounded-lg">
+                        <i data-lucide="bot" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm leading-none">MediReach Smart Triage</h3>
+                        <span class="text-[11px] text-emerald-100 flex items-center gap-1 mt-1">
+                            <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping"></span> AI Assistant Online
+                        </span>
+                    </div>
+                </div>
+
+                <div id="chat-box" class="flex-1 p-4 overflow-y-auto space-y-4 text-sm bg-slate-50/50">
+                    <div class="flex items-start gap-2.5">
+                        <div class="bg-emerald-100 text-emerald-700 p-1.5 rounded-lg font-bold text-xs">AI</div>
+                        <div class="bg-white border border-slate-200 p-3 rounded-2xl rounded-tl-none shadow-xs max-w-[85%]">
+                            Jambo! I am your AI triage assistant. To help recommend the best care path, please share what symptoms you are experiencing today?
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-2 border-t border-slate-100 bg-white grid grid-cols-2 gap-1.5 text-xs font-medium text-slate-600">
+                    <button onclick="sendPredefinedMessage('Frequent urination and blurred vision', 'chronic')" class="p-2 text-left bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 rounded-lg transition truncate">?? Chronic Symptoms</button>
+                    <button onclick="sendPredefinedMessage('High fever and severe headache', 'acute')" class="p-2 text-left bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 border border-slate-200 rounded-lg transition truncate">?? High Fever & Headaches</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="nurse-view" class="hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-slate-400 uppercase">Today's Earnings</span>
+                        <h3 class="text-2xl font-bold text-slate-900 mt-1">KES 4,500</h3>
+                    </div>
+                    <div class="bg-emerald-50 p-3 rounded-xl text-emerald-600"><i data-lucide="wallet"></i></div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-slate-400 uppercase">Status</span>
+                        <h3 id="nurse-status" class="text-md font-bold text-emerald-600 mt-2 flex items-center gap-1.5">
+                            <span class="w-2 h-2 bg-emerald-500 rounded-full"></span> Active & Online
+                        </h3>
+                    </div>
+                    <button onclick="toggleNurseDuty()" class="text-xs bg-slate-100 text-slate-700 hover:bg-slate-200 font-semibold px-3 py-2 rounded-lg transition">Toggle Duty</button>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-slate-400 uppercase">Completed Visits</span>
+                        <h3 class="text-2xl font-bold text-slate-900 mt-1">12</h3>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded-xl text-blue-600"><i data-lucide="check-circle-2"></i></div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+                    <div>
+                        <span class="text-xs font-bold text-slate-400 uppercase">Rating Score</span>
+                        <h3 class="text-2xl font-bold text-slate-900 mt-1">4.92 <span class="text-xs font-normal text-slate-400">/5</span></h3>
+                    </div>
+                    <div class="bg-amber-50 p-3 rounded-xl text-amber-500"><i data-lucide="star"></i></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-xs p-6">
+                    <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <i data-lucide="bell-ring" class="text-amber-500 animate-bounce"></i> Incoming Dispatched Requests
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="p-4 border border-slate-100 bg-slate-50/50 rounded-xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-slate-900">Mary Wanjiku</span>
+                                    <span class="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-sm uppercase">AI Triage Match</span>
+                                </div>
+                                <p class="text-xs text-slate-500 mt-1 flex items-center gap-1"><i data-lucide="map-pin" class="w-3 h-3"></i> Kilimani, Nairobi (1.2 km away)</p>
+                                <p class="text-xs text-slate-700 font-medium mt-2 bg-white inline-block border border-slate-200 px-2 py-1 rounded-sm">Requested: Diabetes Checkup & Insulin Injection Assistance</p>
+                            </div>
+                            <div class="flex gap-2 w-full sm:w-auto">
+                                <button onclick="alert('Request Accepted! Map navigation routing started.')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-lg transition">Accept</button>
+                                <button class="bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold px-4 py-2.5 rounded-lg transition">Decline</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <i data-lucide="sparkles" class="text-violet-600"></i> AI Predictive Scheduling
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-1">Smart follow-up flags based on patient management timelines.</p>
+                    </div>
+                    <hr class="border-slate-100">
+                    <div class="space-y-3">
+                        <div class="p-3 bg-violet-50/50 border border-violet-100 rounded-xl">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-violet-900">Maternal Care Plan</span>
+                                <span class="bg-violet-100 text-violet-800 text-[9px] font-bold px-2 py-0.5 rounded-sm">Due in 2 days</span>
+                            </div>
+                            <p class="text-xs text-slate-700 mt-1 font-medium">Faith Kiprop (Third-trimester home checkup)</p>
+                        </div>
+                        <div class="p-3 bg-orange-50/50 border border-orange-100 rounded-xl">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-orange-900">Hypertension Management</span>
+                                <span class="bg-orange-100 text-orange-800 text-[9px] font-bold px-2 py-0.5 rounded-sm">Due Tomorrow</span>
+                            </div>
+                            <p class="text-xs text-slate-700 mt-1 font-medium">John Mwangi (Elderly care vitals check)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Init Icons
+        lucide.createIcons();
+
+        // Global state tracking variables
+        let currentRole = 'patient';
+        let map;
+        let activeMarkers = [];
+
+        // Sample Provider Mock Data representing nurses mapped around Nairobi Central/Kilimani area
+        const mockProviders = [
+            { id: 1, name: "Nurse Jane Atieno", specialty: "General Care", lat: -1.2921, lng: 36.8219, phone: "0712345678" },
+            { id: 2, name: "Nurse David Ondieki", specialty: "Elderly & Chronic Care", lat: -1.2863, lng: 36.8065, phone: "0722345678" },
+            { id: 3, name: "Midwife Grace Mwangi", specialty: "Maternal Health", lat: -1.3010, lng: 36.7912, phone: "0733345678" }
+        ];
+
+        // Initialize Map
+        window.addEventListener('DOMContentLoaded', () => {
+            // Set View focused to Nairobi GPS Coordinates
+            map = L.map('map').setView([-1.2921, 36.8219], 13);
+            
+            // Apply lightweight beautiful map styling layout tiles from OpenStreetMap
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Populating medical markers 
+            mockProviders.forEach(provider => {
+                const marker = L.marker([provider.lat, provider.lng]).addTo(map);
+                marker.bindPopup(`
+                    <div class="p-1 font-sans">
+                        <p class="font-bold text-slate-900 text-sm">${provider.name}</p>
+                        <p class="text-xs text-emerald-600 font-semibold mb-1">${provider.specialty}</p>
+                        <span class="text-[10px] bg-slate-100 px-2 py-0.5 rounded-sm block w-fit">? Available Immediately</span>
+                    </div>
+                `);
+                activeMarkers.push(marker);
+            });
+        });
+
+        // Dynamic View Switching Logic
+        function switchRole(role) {
+            currentRole = role;
+            const patientBtn = document.getElementById('btn-patient');
+            const nurseBtn = document.getElementById('btn-nurse');
+            const patientView = document.getElementById('patient-view');
+            const nurseView = document.getElementById('nurse-view');
+
+            if(role === 'patient') {
+                patientBtn.className = "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all bg-white text-emerald-700 shadow-xs border border-slate-200";
+                nurseBtn.className = "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all text-slate-600 hover:text-slate-900";
+                patientView.classList.remove('hidden');
+                nurseView.classList.add('hidden');
+                // Auto redraw map view bounds fixes
+                setTimeout(() => { map.invalidateSize() }, 200);
+            } else {
+                nurseBtn.className = "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all bg-white text-emerald-700 shadow-xs border border-slate-200";
+                patientBtn.className = "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all text-slate-600 hover:text-slate-900";
+                patientView.classList.add('hidden');
+                nurseView.classList.remove('hidden');
+            }
+        }
+
+        // Feature: Form Quick Service Selector Integration
+        function selectService(serviceName) {
+            document.getElementById('selected-service-input').value = serviceName;
+            // Highlight card design visuals
+            document.querySelectorAll('.service-card').forEach(card => card.classList.remove('border-emerald-500', 'bg-emerald-50/50'));
+            event.currentTarget.classList.add('border-emerald-500', 'bg-emerald-50/50');
+        }
+
+        function triggerBookingAlert() {
+            const currentSelected = document.getElementById('selected-service-input').value;
+            alert(`?? Initiating dispatch network search algorithm for: [${currentSelected}]. The closest verified medical professional is being matched!`);
+        }
+
+        // Toggle duty status
+        function toggleNurseDuty() {
+            const statusLabel = document.getElementById('nurse-status');
+            if(statusLabel.classList.contains('text-emerald-600')) {
+                statusLabel.className = "text-md font-bold text-slate-500 mt-2 flex items-center gap-1.5";
+                statusLabel.innerHTML = '<span class="w-2 h-2 bg-slate-400 rounded-full"></span> Offline / Break';
+            } else {
+                statusLabel.className = "text-md font-bold text-emerald-600 mt-2 flex items-center gap-1.5";
+                statusLabel.innerHTML = '<span class="w-2 h-2 bg-emerald-500 rounded-full"></span> Active & Online';
+            }
+        }
+
+        // AI Triage Engine Chat Matrix Emulator
+        function sendPredefinedMessage(text, conditionType) {
+            const chatBox = document.getElementById('chat-box');
+            
+            // Append User text choice
+            chatBox.innerHTML += `
+                <div class="flex items-start gap-2.5 justify-end">
+                    <div class="bg-emerald-600 text-white p-3 rounded-2xl rounded-tr-none shadow-xs max-w-[85%]">
+                        ${text}
+                    </div>
+                    <div class="bg-slate-200 text-slate-700 p-1.5 rounded-lg font-bold text-xs">You</div>
+                </div>
+            `;
+            
+            // Scroll element to view height instantly
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // Delayed response trigger simulating intelligent classification processing
+            setTimeout(() => {
+                let aiResponse = "";
+                if(conditionType === 'chronic') {
+                    aiResponse = `?? <strong>Assessment Summary:</strong> Your symptoms correlate strongly with dynamic fluctuations in glycemic control levels.<br><br>?? <strong>Recommended Action:</strong> <strong>Home Nurse Visit</strong> to conduct an instant HbA1c/blood sugar test profile and assist with scheduling regular chronic clinical data maintenance workflows. Let's get you set up below.`;
+                    // Dynamically lock service dropdown
+                    selectService('Home Visit');
+                } else {
+                    aiResponse = `?? <strong>Assessment Summary:</strong> Acute intense febrile responses require fast monitoring for suspected high-risk infectious vectors such as Malaria or severe Dengue strain profiles.<br><br>?? <strong>Recommended Action:</strong> <strong>Immediate Teleconsultation</strong> with an active medical practitioner or dispatching a localized mobile clinic screening expert.`;
+                    // Update targeted request box
+                    selectService('Teleconsultation');
+                }
+
+                chatBox.innerHTML += `
+                    <div class="flex items-start gap-2.5">
+                        <div class="bg-emerald-100 text-emerald-700 p-1.5 rounded-lg font-bold text-xs">AI</div>
+                        <div class="bg-white border border-slate-200 p-3 rounded-2xl rounded-tl-none shadow-xs max-w-[85%]">
+                            ${aiResponse}
+                        </div>
+                    </div>
+                `;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
